@@ -22,10 +22,10 @@ const authMiddleware = async (req, res, next) => {
     // Verificar token
     const decoded = jwt.verify(token, jwtConfig.secret);
     
-    // Obtener usuario del token
-    const usuario = await Usuario.findById(decoded.id);
+    // Obtener usuario del token usando el ID numérico
+    const usuario = await Usuario.findOne({ id: decoded.id, activo: true });
     
-    if (!usuario || !usuario.activo) {
+    if (!usuario) {
       return res.status(401).json({
         error: 'Token inválido',
         message: 'El usuario no existe o está inactivo'

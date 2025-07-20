@@ -48,14 +48,14 @@ const authController = {
 
       const usuarioGuardado = await nuevoUsuario.save();
 
-      // Generar token
-      const token = generarToken(usuarioGuardado._id);
+      // Generar token con el ID numérico
+      const token = generarToken(usuarioGuardado.id);
 
       res.status(201).json({
         message: `${tipoUsuario === 'comprador' ? 'Comprador' : 'Vendedor'} registrado exitosamente`,
         token,
         usuario: {
-          id: usuarioGuardado._id,
+          id: usuarioGuardado.id,
           nombreCompleto: usuarioGuardado.nombreCompleto,
           email: usuarioGuardado.email,
           tipoUsuario: usuarioGuardado.tipoUsuario
@@ -126,14 +126,14 @@ const authController = {
       // Actualizar fecha de último login
       await usuario.actualizarUltimoLogin();
 
-      // Generar token
-      const token = generarToken(usuario._id);
+      // Generar token con el ID numérico
+      const token = generarToken(usuario.id);
 
       res.json({
         message: 'Login exitoso',
         token,
         usuario: {
-          id: usuario._id,
+          id: usuario.id,
           nombreCompleto: usuario.nombreCompleto,
           email: usuario.email,
           tipoUsuario: usuario.tipoUsuario,

@@ -5,11 +5,13 @@ const router = express.Router();
 const saludoRoutes = require('./saludoRoutes');
 const authRoutes = require('./authRoutes');
 const productosRoutes = require('./productosRoutes');
+const comprasRoutes = require('./comprasRoutes');
 
 // Usar las rutas
 router.use('/saludo', saludoRoutes);
 router.use('/auth', authRoutes);
 router.use('/productos', productosRoutes);
+router.use('/compras', comprasRoutes);
 
 // Ruta de información de la API con todas las rutas disponibles
 router.get('/', (req, res) => {
@@ -130,6 +132,83 @@ router.get('/', (req, res) => {
           bodyRequerido: {
             rating: 'number (1-5)'
           }
+        }
+      },
+      compras: {
+        // Rutas para compras
+        crearCompra: {
+          url: '/api/compras',
+          metodo: 'POST',
+          descripcion: 'Registrar una nueva compra',
+          requiereToken: true,
+          bodyRequerido: {
+            idUsuario: 'number (ID numérico del usuario comprador)',
+            productos: [{
+              idProducto: 'ObjectId',
+              titulo: 'string',
+              precio: 'number',
+              cantidad: 'number',
+              subtotal: 'number'
+            }],
+            resumenCompra: {
+              subtotal: 'number',
+              impuestos: 'number',
+              descuentos: 'number (opcional)',
+              total: 'number'
+            },
+            datosEnvio: {
+              direccion: 'string',
+              ciudad: 'string',
+              codigoPostal: 'string',
+              pais: 'string',
+              telefono: 'string'
+            },
+            metodoPago: {
+              tipo: 'string (tarjeta_credito, tarjeta_debito, transferencia, efectivo, paypal)',
+              ultimosDigitos: 'string (4 dígitos, requerido para tarjetas)',
+              fechaTransaccion: 'ISO Date string'
+            },
+            fechaPedido: 'ISO Date string (opcional)',
+            estado: 'string (opcional, default: pendiente)',
+            numeroOrden: 'string (opcional, se genera automáticamente)'
+          }
+        },
+        obtenerOrdenes: {
+          url: '/api/compras/usuario/:idUsuario',
+          metodo: 'GET',
+          descripcion: 'Obtener todas las órdenes de un usuario',
+          requiereToken: true,
+          ejemplo: '/api/compras/usuario/123',
+          queryParams: {
+            page: 'number (página, default: 1)',
+            limit: 'number (límite por página, default: 10)',
+            estado: 'string (filtrar por estado)',
+            fechaInicio: 'ISO Date string',
+            fechaFin: 'ISO Date string'
+          }
+        },
+        obtenerOrdenPorId: {
+          url: '/api/compras/:idOrden',
+          metodo: 'GET',
+          descripcion: 'Obtener una orden específica por ID',
+          requiereToken: true,
+          ejemplo: '/api/compras/64a1b2c3d4e5f6789abcdef0'
+        },
+        actualizarEstado: {
+          url: '/api/compras/:idOrden/estado',
+          metodo: 'PUT',
+          descripcion: 'Actualizar estado de una orden',
+          requiereToken: true,
+          bodyRequerido: {
+            estado: 'string (pendiente, procesando, enviado, entregado, cancelado)'
+          }
+        },
+        estadisticas: {
+          url: '/api/compras/usuario/:idUsuario/estadisticas',
+          metodo: 'GET',
+          descripcion: 'Obtener estadísticas de compras de un usuario',
+          requiereToken: true,
+          ejemplo: '/api/compras/usuario/123/estadisticas'
         }
       },
       categorias: {

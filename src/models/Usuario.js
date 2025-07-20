@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const usuarioSchema = new mongoose.Schema({
+  id: {
+    type: Number,
+    unique: true
+  },
   nombreCompleto: {
     type: String,
     required: [true, 'El nombre completo es requerido'],
@@ -89,6 +93,22 @@ usuarioSchema.index({ email: 1 });
 usuarioSchema.index({ tipoUsuario: 1 });
 usuarioSchema.index({ activo: 1 });
 
+// Pre-hook para generar ID numérico antes de guardar
+usuarioSchema.pre('save', async function(next) {
+  if (this.isNew && !this.id) {
+    try {
+      // Buscar el último ID numérico
+      const ultimoUsuario = await this.constructor.findOne({}, {}, { sort: { 'id': -1 } });
+      this.id = ultimoUsuario ? ultimoUsuario.id + 1 : 1;
+      console.log(`✅ Asignando ID numérico: ${this.id} a usuario: ${this.email}`);
+    } catch (error) {
+      console.error('❌ Error al generar ID numérico:', error);
+      return next(error);
+    }
+  }
+  next();
+});
+
 // Pre-hook para normalizar el número de celular antes de guardar
 usuarioSchema.pre('save', function(next) {
   if (this.isModified('numeroCelular')) {
@@ -147,6 +167,12 @@ usuarioSchema.methods.toJSON = function() {
   const usuario = this.toObject();
   delete usuario.password;
   return usuario;
+};
+
+// Método estático para generar siguiente ID numérico
+usuarioSchema.statics.generarSiguienteId = async function() {
+  const ultimoUsuario = await this.findOne({}, {}, { sort: { 'id': -1 } });
+  return ultimoUsuario ? ultimoUsuario.id + 1 : 1;
 };
 
 // Método estático para encontrar por email
