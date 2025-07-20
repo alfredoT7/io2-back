@@ -99,8 +99,21 @@ const validarRegistro = (req, res, next) => {
     errores.push('El nombre completo es requerido y debe tener al menos 2 caracteres');
   }
 
-  if (!numeroCelular || !/^[0-9]{10,15}$/.test(numeroCelular)) {
-    errores.push('El número de celular debe tener entre 10 y 15 dígitos');
+  // Validar número de celular boliviano
+  if (!numeroCelular) {
+    errores.push('El número de celular es requerido');
+  } else {
+    // Limpiar el número (remover espacios, guiones, paréntesis, +)
+    const cleanNumber = numeroCelular.replace(/[\s\-\(\)\+]/g, '');
+    
+    // Validar formatos bolivianos:
+    // 1. 8 dígitos empezando con 6, 7 u 8
+    // 2. Con código de país 591 seguido del número celular
+    const isValidBolivian = /^[678]\d{7}$/.test(cleanNumber) || /^591[678]\d{7}$/.test(cleanNumber);
+    
+    if (!isValidBolivian) {
+      errores.push('El número de celular debe ser un número boliviano válido (ej: 70000000, +591 70000000)');
+    }
   }
 
   if (!email || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
