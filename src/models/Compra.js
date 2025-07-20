@@ -1,20 +1,19 @@
 const mongoose = require('mongoose');
 
 const compraSchema = new mongoose.Schema({
-  idUsuario: {
+  usuario: {
     type: Number,
     ref: 'Usuario',
     required: [true, 'El ID del usuario es requerido']
   },
   productos: [{
-    idProducto: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Producto',
+    id: {
+      type: Number,
       required: [true, 'El ID del producto es requerido']
     },
-    titulo: {
+    nombre: {
       type: String,
-      required: [true, 'El título del producto es requerido']
+      required: [true, 'El nombre del producto es requerido']
     },
     precio: {
       type: Number,
@@ -28,33 +27,18 @@ const compraSchema = new mongoose.Schema({
     },
     subtotal: {
       type: Number,
-      required: [true, 'El subtotal es requerido'],
       min: [0, 'El subtotal debe ser mayor o igual a 0']
+    },
+    imagen: {
+      type: String
     }
   }],
-  resumenCompra: {
-    subtotal: {
-      type: Number,
-      required: [true, 'El subtotal es requerido'],
-      min: [0, 'El subtotal debe ser mayor o igual a 0']
-    },
-    impuestos: {
-      type: Number,
-      required: [true, 'Los impuestos son requeridos'],
-      min: [0, 'Los impuestos deben ser mayor o igual a 0']
-    },
-    descuentos: {
-      type: Number,
-      default: 0,
-      min: [0, 'Los descuentos deben ser mayor o igual a 0']
-    },
-    total: {
-      type: Number,
-      required: [true, 'El total es requerido'],
-      min: [0, 'El total debe ser mayor a 0']
-    }
+  total: {
+    type: Number,
+    required: [true, 'El total es requerido'],
+    min: [0, 'El total debe ser mayor a 0']
   },
-  datosEnvio: {
+  envio: {
     direccion: {
       type: String,
       required: [true, 'La dirección es requerida'],
@@ -70,18 +54,13 @@ const compraSchema = new mongoose.Schema({
       required: [true, 'El código postal es requerido'],
       trim: true
     },
-    pais: {
-      type: String,
-      required: [true, 'El país es requerido'],
-      trim: true
-    },
     telefono: {
       type: String,
       required: [true, 'El teléfono es requerido'],
       trim: true,
       validate: {
         validator: function(telefono) {
-          // Validación para números bolivianos y internacionales
+          // Validación para números bolivianos
           const bolivianPhoneRegex = /^[6-8]\d{7}$/;
           const internationalPhoneRegex = /^(\+591\s?)?[6-8]\d{7}$/;
           const generalInternationalRegex = /^\+\d{1,4}\s?\d{6,14}$/;
@@ -95,36 +74,12 @@ const compraSchema = new mongoose.Schema({
     }
   },
   metodoPago: {
-    tipo: {
-      type: String,
-      required: [true, 'El tipo de método de pago es requerido'],
-      enum: {
-        values: ['tarjeta_credito', 'tarjeta_debito', 'transferencia', 'efectivo', 'paypal'],
-        message: 'Tipo de pago no válido'
-      }
-    },
-    ultimosDigitos: {
-      type: String,
-      validate: {
-        validator: function(digitos) {
-          // Solo validar si el tipo de pago es tarjeta
-          if (this.metodoPago.tipo === 'tarjeta_credito' || this.metodoPago.tipo === 'tarjeta_debito') {
-            return digitos && /^\d{4}$/.test(digitos);
-          }
-          return true;
-        },
-        message: 'Los últimos dígitos deben ser 4 números'
-      }
-    },
-    fechaTransaccion: {
-      type: Date,
-      required: [true, 'La fecha de transacción es requerida']
+    type: String,
+    required: [true, 'El método de pago es requerido'],
+    enum: {
+      values: ['tarjeta', 'efectivo', 'transferencia', 'paypal'],
+      message: 'Método de pago no válido'
     }
-  },
-  fechaPedido: {
-    type: Date,
-    default: Date.now,
-    required: [true, 'La fecha del pedido es requerida']
   },
   estado: {
     type: String,
@@ -134,11 +89,18 @@ const compraSchema = new mongoose.Schema({
     },
     default: 'pendiente'
   },
+  notas: {
+    type: String,
+    default: ''
+  },
   numeroOrden: {
     type: String,
-    required: [true, 'El número de orden es requerido'],
     unique: true,
     trim: true
+  },
+  fechaCreacion: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,
@@ -147,7 +109,7 @@ const compraSchema = new mongoose.Schema({
 });
 
 // Índices para mejorar rendimiento
-compraSchema.index({ idUsuario: 1, fechaPedido: -1 });
+compraSchema.index({ usuario: 1, fechaCreacion: -1 });
 compraSchema.index({ numeroOrden: 1 });
 compraSchema.index({ estado: 1 });
 
