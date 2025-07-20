@@ -31,3 +31,7 @@ coverage/
 # Archivos de build
 dist/
 build/
+
+# WhatsApp Web.js authentication data
+.wwebjs_auth/
+.wwebjs_cache/
