@@ -14,9 +14,28 @@ const usuarioSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function(v) {
-        return /^[0-9]{10,15}$/.test(v);
+        // Formato boliviano: 
+        // - 8 dígitos empezando con 6, 7 u 8: 60000000, 70000000, 80000000
+        // - Con código de país: +59160000000 o 59160000000
+        // - Con espacios o guiones: +591 6000-0000, 591-6000-0000, etc.
+        
+        // Limpiar el número (remover espacios, guiones, paréntesis, +)
+        const cleanNumber = v.replace(/[\s\-\(\)\+]/g, '');
+        
+        // Validar formatos bolivianos:
+        // 1. 8 dígitos empezando con 6, 7 u 8
+        if (/^[678]\d{7}$/.test(cleanNumber)) {
+          return true;
+        }
+        
+        // 2. Con código de país 591 seguido del número celular
+        if (/^591[678]\d{7}$/.test(cleanNumber)) {
+          return true;
+        }
+        
+        return false;
       },
-      message: 'El número de celular debe tener entre 10 y 15 dígitos'
+      message: 'El número de celular debe ser un número boliviano válido (ej: 70000000, +591 70000000)'
     }
   },
   email: {
@@ -69,6 +88,23 @@ const usuarioSchema = new mongoose.Schema({
 usuarioSchema.index({ email: 1 });
 usuarioSchema.index({ tipoUsuario: 1 });
 usuarioSchema.index({ activo: 1 });
+
+// Pre-hook para normalizar el número de celular antes de guardar
+usuarioSchema.pre('save', function(next) {
+  if (this.isModified('numeroCelular')) {
+    // Limpiar y normalizar el número de celular
+    const cleanNumber = this.numeroCelular.replace(/[\s\-\(\)\+]/g, '');
+    
+    // Si tiene código de país 591, mantenerlo
+    if (cleanNumber.startsWith('591')) {
+      this.numeroCelular = cleanNumber;
+    } else if (/^[678]\d{7}$/.test(cleanNumber)) {
+      // Si es solo el número local, mantenerlo así
+      this.numeroCelular = cleanNumber;
+    }
+  }
+  next();
+});
 
 // Pre-hook para hashear la contraseña antes de guardar
 usuarioSchema.pre('save', async function(next) {
