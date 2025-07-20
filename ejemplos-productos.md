@@ -54,6 +54,18 @@ Content-Type: application/json
 }
 ```
 
+**Ejemplo 4 - Con Imagen Base64:**
+```json
+{
+  "title": "Producto con Imagen Base64",
+  "price": 29.99,
+  "description": "Ejemplo de producto usando imagen en base64",
+  "category": "electronics",
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=",
+  "stock": 10
+}
+```
+
 **Respuesta esperada:**
 ```json
 {
@@ -95,6 +107,29 @@ Content-Type: application/json
   "stock": 100
 }
 ```
+
+## 🖼️ **Tipos de Imagen Soportados:**
+
+### **Opción 1 - URL de imagen:**
+```json
+{
+  "image": "https://example.com/imagen.jpg"
+}
+```
+**Formatos válidos:** `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`
+
+### **Opción 2 - Base64:**
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
+}
+```
+**Formatos válidos:** `jpeg`, `jpg`, `png`, `gif`, `webp`
+
+### **Ejemplos de base64 válidos:**
+- `data:image/jpeg;base64,<datos>`
+- `data:image/png;base64,<datos>`
+- `data:image/webp;base64,<datos>`
 
 ## ⭐ **Rating Opcional al Crear Productos:**
 

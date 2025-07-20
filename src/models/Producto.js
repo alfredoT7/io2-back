@@ -41,9 +41,15 @@ const productoSchema = new mongoose.Schema({
     required: [true, 'La imagen es requerida'],
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(v);
+        // Validar URL con extensión de imagen
+        const isValidURL = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(v);
+        
+        // Validar base64 (data:image/tipo;base64,...)
+        const isValidBase64 = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/.test(v);
+        
+        return isValidURL || isValidBase64;
       },
-      message: 'La imagen debe ser una URL válida que termine en jpg, jpeg, png, gif o webp'
+      message: 'La imagen debe ser una URL válida (jpg, jpeg, png, gif, webp) o una imagen en base64'
     }
   },
   rating: {
