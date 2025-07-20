@@ -2,6 +2,7 @@ const Compra = require('../models/Compra');
 const Usuario = require('../models/Usuario');
 const Producto = require('../models/Producto');
 const mongoose = require('mongoose');
+const whatsappService = require('../services/whatsappService');
 
 // Crear una nueva compra
 const crearCompra = async (req, res) => {
@@ -37,6 +38,15 @@ const crearCompra = async (req, res) => {
     });
 
     const compraGuardada = await nuevaCompra.save();
+
+    // *** NUEVO: Enviar mensaje de WhatsApp ***
+    try {
+      await whatsappService.enviarMensajeCompra(compraGuardada, usuario);
+      console.log('✅ Mensaje de WhatsApp enviado para orden:', compraGuardada.numeroOrden);
+    } catch (whatsappError) {
+      console.error('⚠️ Error al enviar WhatsApp (compra registrada correctamente):', whatsappError);
+      // No fallar la compra si WhatsApp falla
+    }
 
     res.status(201).json({
       success: true,

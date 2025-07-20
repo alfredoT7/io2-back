@@ -6,12 +6,14 @@ const saludoRoutes = require('./saludoRoutes');
 const authRoutes = require('./authRoutes');
 const productosRoutes = require('./productosRoutes');
 const comprasRoutes = require('./comprasRoutes');
+const whatsappRoutes = require('./whatsappRoutes');
 
 // Usar las rutas
 router.use('/saludo', saludoRoutes);
 router.use('/auth', authRoutes);
 router.use('/productos', productosRoutes);
 router.use('/compras', comprasRoutes);
+router.use('/whatsapp', whatsappRoutes);
 
 // Ruta de información de la API con todas las rutas disponibles
 router.get('/', (req, res) => {
@@ -209,6 +211,29 @@ router.get('/', (req, res) => {
           descripcion: 'Obtener estadísticas de compras de un usuario',
           requiereToken: true,
           ejemplo: '/api/compras/usuario/123/estadisticas'
+        }
+      },
+      whatsapp: {
+        estado: {
+          url: '/api/whatsapp/status',
+          metodo: 'GET',
+          descripcion: 'Verificar estado de WhatsApp Service',
+          requiereToken: true,
+          respuesta: {
+            whatsapp: {
+              initialized: 'boolean',
+              authenticated: 'boolean',
+              ready: 'boolean',
+              info: 'object (información del dispositivo conectado)'
+            }
+          }
+        },
+        reinicializar: {
+          url: '/api/whatsapp/reinit',
+          metodo: 'POST',
+          descripcion: 'Reinicializar WhatsApp Service (solo desarrollo)',
+          requiereToken: true,
+          notas: 'Solo disponible en modo desarrollo'
         }
       },
       categorias: {

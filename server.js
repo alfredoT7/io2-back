@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
+const whatsappService = require('./src/services/whatsappService');
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,6 +12,17 @@ const startServer = async () => {
   try {
     // Conectar a MongoDB
     await connectDB();
+    
+    // Inicializar WhatsApp (en desarrollo únicamente)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔄 Inicializando WhatsApp Service...');
+      whatsappService.initialize().catch(error => {
+        console.error('⚠️ WhatsApp no se pudo inicializar:', error.message);
+        console.log('📱 Las compras funcionarán sin notificaciones de WhatsApp');
+      });
+    } else {
+      console.log('🏭 Modo producción: WhatsApp deshabilitado');
+    }
     
     // Iniciar el servidor
     app.listen(PORT, () => {
