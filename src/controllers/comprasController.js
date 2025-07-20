@@ -8,8 +8,8 @@ const crearCompra = async (req, res) => {
   try {
     const compraData = req.body;
     
-    // Validar que el usuario existe usando el ID numérico
-    const usuario = await Usuario.findOne({ id: compraData.idUsuario, activo: true });
+    // El usuario viene del middleware de autenticación
+    const usuario = req.usuario;
     if (!usuario) {
       return res.status(404).json({
         success: false,
@@ -17,56 +17,31 @@ const crearCompra = async (req, res) => {
       });
     }
 
-    // Validar que todos los productos existen
-    for (const producto of compraData.productos) {
-      const productoExiste = await Producto.findById(producto.idProducto);
-      if (!productoExiste) {
-        return res.status(404).json({
-          success: false,
-          message: `Producto con ID ${producto.idProducto} no encontrado`
-        });
-      }
-    }
+    // Calcular subtotales y total
+    const productosConSubtotal = compraData.productos.map(producto => ({
+      ...producto,
+      subtotal: producto.precio * producto.cantidad
+    }));
 
-    // Validar cálculos
-    const subtotalCalculado = compraData.productos.reduce((total, producto) => {
-      const subtotalProducto = producto.precio * producto.cantidad;
-      if (subtotalProducto !== producto.subtotal) {
-        throw new Error(`Subtotal incorrecto para producto ${producto.titulo}`);
-      }
-      return total + subtotalProducto;
-    }, 0);
+    const total = productosConSubtotal.reduce((sum, producto) => sum + producto.subtotal, 0);
 
-    if (Math.abs(subtotalCalculado - compraData.resumenCompra.subtotal) > 0.01) {
-      return res.status(400).json({
-        success: false,
-        message: 'El subtotal no coincide con los cálculos'
-      });
-    }
+    // Crear la compra con el usuario del token
+    const nuevaCompra = new Compra({
+      usuario: usuario.id, // Usar el ID numérico del usuario autenticado
+      productos: productosConSubtotal,
+      total: total,
+      metodoPago: compraData.metodoPago,
+      envio: compraData.envio,
+      notas: compraData.notas || '',
+      estado: 'pendiente'
+    });
 
-    const totalCalculado = compraData.resumenCompra.subtotal + 
-                          compraData.resumenCompra.impuestos - 
-                          compraData.resumenCompra.descuentos;
-
-    if (Math.abs(totalCalculado - compraData.resumenCompra.total) > 0.01) {
-      return res.status(400).json({
-        success: false,
-        message: 'El total no coincide con los cálculos'
-      });
-    }
-
-    // Si no se proporciona número de orden, se generará automáticamente
-    const nuevaCompra = new Compra(compraData);
     const compraGuardada = await nuevaCompra.save();
-
-    // Poblar la información del usuario y productos para la respuesta
-    await compraGuardada.populate('idUsuario', 'id nombreCompleto email');
-    await compraGuardada.populate('productos.idProducto', 'titulo precio imagen');
 
     res.status(201).json({
       success: true,
       message: 'Compra registrada exitosamente',
-      data: compraGuardada
+      compra: compraGuardada
     });
 
   } catch (error) {
@@ -78,13 +53,6 @@ const crearCompra = async (req, res) => {
         success: false,
         message: 'Datos de compra inválidos',
         errors
-      });
-    }
-
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'El número de orden ya existe'
       });
     }
 
@@ -117,20 +85,20 @@ const obtenerOrdenesPorUsuario = async (req, res) => {
       });
     }
 
-    // Construir filtros con el ID numérico
-    const filtros = { idUsuario: parseInt(idUsuario) };
+    // Construir filtros con el campo usuario (no idUsuario)
+    const filtros = { usuario: parseInt(idUsuario) };
 
     if (estado) {
       filtros.estado = estado;
     }
 
     if (fechaInicio || fechaFin) {
-      filtros.fechaPedido = {};
+      filtros.fechaCreacion = {};
       if (fechaInicio) {
-        filtros.fechaPedido.$gte = new Date(fechaInicio);
+        filtros.fechaCreacion.$gte = new Date(fechaInicio);
       }
       if (fechaFin) {
-        filtros.fechaPedido.$lte = new Date(fechaFin);
+        filtros.fechaCreacion.$lte = new Date(fechaFin);
       }
     }
 
@@ -138,34 +106,31 @@ const obtenerOrdenesPorUsuario = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const limitNum = parseInt(limit);
 
-    // Obtener órdenes con paginación
-    const ordenes = await Compra.find(filtros)
-      .populate('idUsuario', 'id nombreCompleto email')
-      .populate('productos.idProducto', 'titulo precio imagen')
-      .sort({ fechaPedido: -1 })
+    // Obtener compras con paginación
+    const compras = await Compra.find(filtros)
+      .sort({ fechaCreacion: -1 })
       .skip(skip)
       .limit(limitNum);
 
-    // Contar total de órdenes
-    const totalOrdenes = await Compra.countDocuments(filtros);
-    const totalPaginas = Math.ceil(totalOrdenes / limitNum);
+    // Contar total de compras
+    const totalCompras = await Compra.countDocuments(filtros);
+    const totalPaginas = Math.ceil(totalCompras / limitNum);
 
     res.status(200).json({
       success: true,
-      message: 'Órdenes obtenidas exitosamente',
-      data: {
-        ordenes,
-        paginacion: {
-          paginaActual: parseInt(page),
-          totalPaginas,
-          totalOrdenes,
-          ordenesPorPagina: limitNum
-        }
+      message: 'Compras obtenidas exitosamente',
+      compras,
+      total: totalCompras,
+      paginacion: {
+        paginaActual: parseInt(page),
+        totalPaginas,
+        totalCompras,
+        comprasPorPagina: limitNum
       }
     });
 
   } catch (error) {
-    console.error('Error al obtener órdenes:', error);
+    console.error('Error al obtener compras:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -269,26 +234,20 @@ const obtenerEstadisticasUsuario = async (req, res) => {
     const idUsuarioNumerico = parseInt(idUsuario);
 
     const estadisticas = await Compra.aggregate([
-      { $match: { idUsuario: idUsuarioNumerico } },
+      { $match: { usuario: idUsuarioNumerico } },
       {
         $group: {
           _id: null,
-          totalOrdenes: { $sum: 1 },
-          totalGastado: { $sum: '$resumenCompra.total' },
-          promedioOrden: { $avg: '$resumenCompra.total' },
-          ordenesPorEstado: {
-            $push: {
-              estado: '$estado',
-              total: '$resumenCompra.total'
-            }
-          }
+          totalCompras: { $sum: 1 },
+          montoTotal: { $sum: '$total' },
+          promedioCompra: { $avg: '$total' }
         }
       }
     ]);
 
-    // Contar órdenes por estado
-    const ordenesPorEstado = await Compra.aggregate([
-      { $match: { idUsuario: idUsuarioNumerico } },
+    // Contar compras por estado
+    const comprasPorEstado = await Compra.aggregate([
+      { $match: { usuario: idUsuarioNumerico } },
       {
         $group: {
           _id: '$estado',
@@ -297,21 +256,36 @@ const obtenerEstadisticasUsuario = async (req, res) => {
       }
     ]);
 
+    // Método de pago más usado
+    const metodoPagoMasUsado = await Compra.aggregate([
+      { $match: { usuario: idUsuarioNumerico } },
+      {
+        $group: {
+          _id: '$metodoPago',
+          cantidad: { $sum: 1 }
+        }
+      },
+      { $sort: { cantidad: -1 } },
+      { $limit: 1 }
+    ]);
+
     const resultado = estadisticas[0] || {
-      totalOrdenes: 0,
-      totalGastado: 0,
-      promedioOrden: 0
+      totalCompras: 0,
+      montoTotal: 0,
+      promedioCompra: 0
     };
 
-    resultado.ordenesPorEstado = ordenesPorEstado.reduce((acc, item) => {
+    resultado.estadoCompras = comprasPorEstado.reduce((acc, item) => {
       acc[item._id] = item.cantidad;
       return acc;
     }, {});
 
+    resultado.metodoPagoMasUsado = metodoPagoMasUsado[0] ? metodoPagoMasUsado[0]._id : null;
+
     res.status(200).json({
       success: true,
       message: 'Estadísticas obtenidas exitosamente',
-      data: resultado
+      estadisticas: resultado
     });
 
   } catch (error) {
