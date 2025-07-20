@@ -16,7 +16,12 @@ const corsOptions = {
     'http://localhost:5174',
     'http://localhost:8080',
     'http://127.0.0.1:5173',
-    'http://127.0.0.1:3000'
+    'http://127.0.0.1:3000',
+    // Dominios de producción
+    'https://io2-alpha.vercel.app',
+    /\.vercel\.app$/,
+    /\.netlify\.app$/,
+    // Agrega aquí más dominios de frontend si los necesitas
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

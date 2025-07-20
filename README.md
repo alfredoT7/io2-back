@@ -1,6 +1,48 @@
-# API de Pastillas - Backend
+# API de Productos - Backend
 
-API REST desarrollada con Express.js para la gestión de pastillas.
+API REST desarrollada con Express.js para la gestión de productos con autenticación JWT y MongoDB.
+
+## 🚀 Deploy en Vercel
+
+### Pasos para deployar:
+
+1. **Instalar Vercel CLI:**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Login en Vercel:**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy desde la carpeta del proyecto:**
+   ```bash
+   vercel
+   ```
+
+4. **Configurar variables de entorno en Vercel:**
+   - Ve a tu proyecto en vercel.com
+   - Settings → Environment Variables
+   - Agrega estas variables (usa los mismos valores de tu archivo `.env`):
+
+   ```
+   NODE_ENV=production
+   PORT=3001
+   MONGODB_URI=mongodb+srv://alfredo:notebok456@recluster.cbmnw.mongodb.net/pastillas_db?retryWrites=true&w=majority&appName=REcluster
+   JWT_SECRET=pastillas-app-secret-key-2025-muy-segura
+   JWT_EXPIRES_IN=24h
+   API_URL=https://tu-proyecto.vercel.app
+   ```
+
+### 📋 Variables de entorno requeridas:
+
+- `NODE_ENV`: production (en Vercel)
+- `PORT`: 3001 
+- `MONGODB_URI`: Tu conexión a MongoDB Atlas (ya configurada)
+- `JWT_SECRET`: Tu clave secreta JWT (ya configurada)
+- `JWT_EXPIRES_IN`: 24h
+- `API_URL`: URL de tu API en Vercel
 
 ## 🚀 Instalación
 
