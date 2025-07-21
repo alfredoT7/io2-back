@@ -9,7 +9,46 @@ const app = express();
 
 // Configuración de CORS
 const corsOptions = {
-  origin: [
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001', 
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:8080',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      'https://io2-alpha.vercel.app'
+    ];
+    
+    // Permitir cualquier subdominio de vercel.app o netlify.app
+    if (origin.includes('.vercel.app') || origin.includes('.netlify.app')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log('❌ CORS bloqueado para origen:', origin);
+      return callback(null, false);
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+// Middlewares globales
+app.use(cors(corsOptions));
+
+// Middleware adicional para CORS personalizado
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:5173',
@@ -17,19 +56,24 @@ const corsOptions = {
     'http://localhost:8080',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:3000',
-    // Dominios de producción
-    'https://io2-alpha.vercel.app',
-    /\.vercel\.app$/,
-    /\.netlify\.app$/,
-    // Agrega aquí más dominios de frontend si los necesitas
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
+    'https://io2-alpha.vercel.app'
+  ];
 
-// Middlewares globales
-app.use(cors(corsOptions));
+  if (allowedOrigins.includes(origin) || origin?.includes('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 app.use(express.json({ limit: '50mb' })); // Aumentar límite para imágenes base64
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
