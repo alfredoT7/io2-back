@@ -177,7 +177,7 @@ const actualizarEstadoOrden = async (req, res) => {
     const { idOrden } = req.params;
     const { estado } = req.body;
 
-    const estadosValidos = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
+    const estadosValidos = ['pendiente', 'verificado', 'procesando', 'enviado', 'entregado', 'cancelado'];
     
     if (!estadosValidos.includes(estado)) {
       return res.status(400).json({
@@ -298,10 +298,128 @@ const obtenerEstadisticasUsuario = async (req, res) => {
   }
 };
 
+// Obtener todas las compras (para administradores)
+const obtenerTodasLasCompras = async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      estado, 
+      fechaInicio, 
+      fechaFin,
+      usuario 
+    } = req.query;
+
+    // Construir filtros
+    const filtros = {};
+
+    if (estado) {
+      filtros.estado = estado;
+    }
+
+    if (usuario) {
+      filtros.usuario = parseInt(usuario);
+    }
+
+    if (fechaInicio || fechaFin) {
+      filtros.fechaCreacion = {};
+      if (fechaInicio) {
+        filtros.fechaCreacion.$gte = new Date(fechaInicio);
+      }
+      if (fechaFin) {
+        filtros.fechaCreacion.$lte = new Date(fechaFin);
+      }
+    }
+
+    // Configurar paginación
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+
+    // Obtener compras con paginación y datos del usuario
+    const compras = await Compra.find(filtros)
+      .sort({ fechaCreacion: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate('usuario', 'id nombreCompleto email numeroCelular', Usuario);
+
+    // Contar total de compras
+    const totalCompras = await Compra.countDocuments(filtros);
+    const totalPaginas = Math.ceil(totalCompras / limitNum);
+
+    res.status(200).json({
+      success: true,
+      message: 'Todas las compras obtenidas exitosamente',
+      compras,
+      total: totalCompras,
+      paginacion: {
+        paginaActual: parseInt(page),
+        totalPaginas,
+        totalCompras,
+        comprasPorPagina: limitNum
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al obtener todas las compras:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
+// Verificar una compra (cambiar de pendiente a verificado)
+const verificarCompra = async (req, res) => {
+  try {
+    const { idOrden } = req.params;
+
+    // Buscar la compra
+    const compra = await Compra.findById(idOrden)
+      .populate('usuario', 'id nombreCompleto email', Usuario);
+
+    if (!compra) {
+      return res.status(404).json({
+        success: false,
+        message: 'Compra no encontrada'
+      });
+    }
+
+    // Verificar que la compra esté en estado pendiente
+    if (compra.estado !== 'pendiente') {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede verificar una compra en estado "${compra.estado}". Solo se pueden verificar compras pendientes.`,
+        estadoActual: compra.estado
+      });
+    }
+
+    // Actualizar el estado a verificado
+    compra.estado = 'verificado';
+    const compraActualizada = await compra.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Compra verificada exitosamente',
+      compra: compraActualizada
+    });
+
+  } catch (error) {
+    console.error('Error al verificar compra:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   crearCompra,
   obtenerOrdenesPorUsuario,
   obtenerOrdenPorId,
   actualizarEstadoOrden,
-  obtenerEstadisticasUsuario
+  obtenerEstadisticasUsuario,
+  obtenerTodasLasCompras,
+  verificarCompra
 };

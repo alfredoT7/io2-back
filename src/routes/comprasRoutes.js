@@ -5,13 +5,24 @@ const {
   obtenerOrdenesPorUsuario, 
   obtenerOrdenPorId,
   actualizarEstadoOrden,
-  obtenerEstadisticasUsuario
+  obtenerEstadisticasUsuario,
+  obtenerTodasLasCompras,
+  verificarCompra
 } = require('../controllers/comprasController');
 const { authMiddleware } = require('../middleware');
 
 // Ruta para crear una nueva compra
 // POST /api/compras
 router.post('/', authMiddleware, crearCompra);
+
+// Ruta para obtener TODAS las compras (para administradores)
+// GET /api/compras
+// Query params opcionales: page, limit, estado, fechaInicio, fechaFin, usuario
+router.get('/', authMiddleware, obtenerTodasLasCompras);
+
+// Ruta para verificar una compra (cambiar de pendiente a verificado)
+// PATCH /api/compras/:idOrden/verificar
+router.patch('/:idOrden/verificar', authMiddleware, verificarCompra);
 
 // Ruta para obtener todas las órdenes de un usuario específico
 // GET /api/compras/usuario/:idUsuario

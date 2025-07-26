@@ -84,7 +84,7 @@ const compraSchema = new mongoose.Schema({
   estado: {
     type: String,
     enum: {
-      values: ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'],
+      values: ['pendiente', 'verificado', 'procesando', 'enviado', 'entregado', 'cancelado'],
       message: 'Estado no válido'
     },
     default: 'pendiente'
